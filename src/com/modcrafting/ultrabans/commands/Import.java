@@ -12,28 +12,31 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import com.modcrafting.ultrabans.UltraBan;
+import com.modcrafting.ultrabans.Ultrabans;
+import com.modcrafting.ultrabans.tracker.Track;
 
 public class Import implements CommandExecutor{
-	UltraBan plugin;
+	Ultrabans plugin;
 	String permission = "ultraban.import";
-	public Import(UltraBan ultraBan) {
+	public Import(Ultrabans ultraBan) {
 	this.plugin = ultraBan;
 	}
 	public boolean onCommand(final CommandSender sender, Command command, String label, String[] args) {
+		Track.track(command.getName());
 		if(!sender.hasPermission(command.getPermission())){
-			sender.sendMessage(ChatColor.RED + "You do not have the required permissions.");
+			sender.sendMessage(ChatColor.RED+plugin.perms);
 			return true;
 		}
 		plugin.getServer().getScheduler().scheduleAsyncDelayedTask(plugin,new Runnable(){
 			@Override
 			public void run() {
-				sender.sendMessage(ChatColor.GRAY + "Be patient. Loading");
+				String msg = plugin.getConfig().getString("Messages.Import.Loading","Be patient. Loading...");
+				msg=plugin.util.formatMessage(msg);
+				sender.sendMessage(ChatColor.GRAY + msg);
 				try {
 					BufferedReader banlist = new BufferedReader(new FileReader("banned-players.txt"));
 					String p;
@@ -42,33 +45,36 @@ public class Import implements CommandExecutor{
 							g(p);
 						}
 					}
+					banlist.close();
 					BufferedReader bannedIP = new BufferedReader(new FileReader("banned-ips.txt"));
 					String ip;
 					while ((ip = bannedIP.readLine()) != null){
 						if(ip!=null&&!ip.contains("#")&&ip.length()>0){
 						    String[] args = ip.split("\\|");
 						    String name = args[0].trim();
-							if(!plugin.bannedIPs.contains(name))
-								plugin.bannedIPs.add(name);
-								String cknullIP = plugin.db.getName(name);
-								if (cknullIP != null){
-									plugin.db.addPlayer(plugin.db.getName(name), "imported", args[2].trim(), 0, 1);
-								}else{
-									plugin.db.setAddress("import", name);
-									
-									plugin.db.addPlayer("import", "imported", args[2].trim(), 0, 1);
-								}
+							if(!plugin.bannedIPs.contains(name)) plugin.bannedIPs.add(name);
+							String cknullIP = plugin.db.getName(name);
+							if (cknullIP != null){
+								plugin.db.addPlayer(plugin.db.getName(name), "imported", args[2].trim(), 0, 1);
+							}else{
+								plugin.db.setAddress("import", name);
+								plugin.db.addPlayer("import", "imported", args[2].trim(), 0, 1);
 							}
 						}
-						sender.sendMessage(ChatColor.GREEN + "Banlist imported.");
-						plugin.getLogger().info("System imported the banlist to the database.");
-						return;
-					} catch (IOException e) {
-						plugin.getLogger().log(Level.SEVERE, "Could not import ban list.");
-						sender.sendMessage(ChatColor.RED + "Could not import ban list.");
 					}
+					bannedIP.close();
+					msg = plugin.getConfig().getString("Messages.Import.Completed","System imported the banlist to the database.");
+					msg=plugin.util.formatMessage(msg);
+					sender.sendMessage(ChatColor.GRAY + msg);
+					plugin.getLogger().info(msg);
+				} catch (IOException e) {
+					msg = plugin.getConfig().getString("Messages.Import.Failed","Could not import ban list.");
+					msg=plugin.util.formatMessage(msg);
+					sender.sendMessage(ChatColor.RED + msg);
+					plugin.getLogger().severe(msg);
 				}
-			});	
+			}
+		});	
 		return true;
 	}
 

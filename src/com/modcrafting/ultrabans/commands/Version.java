@@ -13,16 +13,18 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.PluginDescriptionFile;
 
-import com.modcrafting.ultrabans.UltraBan;
+import com.modcrafting.ultrabans.Ultrabans;
+import com.modcrafting.ultrabans.tracker.Track;
 
 public class Version implements CommandExecutor{
-	UltraBan plugin;
-	public Version(UltraBan ultraBan) {
+	Ultrabans plugin;
+	public Version(Ultrabans ultraBan) {
 		this.plugin = ultraBan;
 	}
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+		Track.track(command.getName());
 		if(!sender.hasPermission(command.getPermission())){
-			sender.sendMessage(ChatColor.RED + "You do not have the required permissions.");
+			sender.sendMessage(ChatColor.RED+plugin.perms);
 			return true;
 		}
 		PluginDescriptionFile pdfFile = plugin.getDescription();

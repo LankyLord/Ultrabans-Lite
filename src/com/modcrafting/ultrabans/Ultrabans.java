@@ -6,25 +6,19 @@
  * http://creativecommons.org/licenses/by-nc-sa/3.0/. 
  */
 package com.modcrafting.ultrabans;
-/**
- * Wickity Wickity Wooh
- * Got to love the magic!
- */
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import net.h31ix.updater.Updater;
+import net.h31ix.updater.Updater.UpdateResult;
+import net.h31ix.updater.Updater.UpdateType;
 
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import com.boxysystems.jgoogleanalytics.JGoogleAnalyticsTracker;
 import com.modcrafting.ultrabans.commands.Ban;
 import com.modcrafting.ultrabans.commands.Check;
 import com.modcrafting.ultrabans.commands.CheckIP;
@@ -37,7 +31,9 @@ import com.modcrafting.ultrabans.commands.Import;
 import com.modcrafting.ultrabans.commands.Ipban;
 import com.modcrafting.ultrabans.commands.Kick;
 import com.modcrafting.ultrabans.commands.Perma;
+import com.modcrafting.ultrabans.commands.Ping;
 import com.modcrafting.ultrabans.commands.Reload;
+import com.modcrafting.ultrabans.commands.Status;
 import com.modcrafting.ultrabans.commands.Tempban;
 import com.modcrafting.ultrabans.commands.Tempipban;
 import com.modcrafting.ultrabans.commands.Unban;
@@ -46,24 +42,34 @@ import com.modcrafting.ultrabans.commands.Warn;
 import com.modcrafting.ultrabans.db.Database;
 import com.modcrafting.ultrabans.db.SQL;
 import com.modcrafting.ultrabans.db.SQLite;
+import com.modcrafting.ultrabans.listeners.UltraBanPlayerListener;
+import com.modcrafting.ultrabans.tracker.Track;
 import com.modcrafting.ultrabans.util.DataHandler;
 import com.modcrafting.ultrabans.util.EditBan;
 import com.modcrafting.ultrabans.util.Formatting;
+import com.modcrafting.ultrabans.util.LoggerHandler;
 
-public class UltraBan extends JavaPlugin {
-	public String maindir = "plugins/UltraBanLite/";
+public class Ultrabans extends JavaPlugin {
 	public HashSet<String> bannedPlayers = new HashSet<String>();
 	public HashSet<String> bannedIPs = new HashSet<String>();
 	public Map<String, Long> tempBans = new HashMap<String, Long>();
 	public Map<String, EditBan> banEditors = new HashMap<String, EditBan>();
-	public Database db;
-	private final UltraBanPlayerListener playerListener = new UltraBanPlayerListener(this);
+	
 	public DataHandler data = new DataHandler(this);
 	public Formatting util = new Formatting(this);
-	public String regexAdmin = "%admin%";
-	public String regexReason = "%reason%";
-	public String regexVictim = "%victim%";
-	public boolean autoComplete;
+	
+	public Database db;
+	
+	public final String regexAdmin = "%admin%";
+	public final String regexReason = "%reason%";
+	public final String regexVictim = "%victim%";
+	public final String regexAmt = "%amt%";
+	public final String regexMode = "%mode%";
+	
+	public String admin;
+	public String reason;
+	public String perms;
+	
 	public void onDisable() {
 		this.getServer().getScheduler().cancelTasks(this);
 		tempBans.clear();
@@ -72,36 +78,65 @@ public class UltraBan extends JavaPlugin {
 		banEditors.clear();
 	}
 	public void onEnable() {
+		long time = System.currentTimeMillis();
 		this.getDataFolder().mkdir();
 		data.createDefaultConfiguration("config.yml");
 		FileConfiguration config = getConfig();
-		autoComplete = config.getBoolean("auto-complete", true);
-		long l = config.getLong("serverSync.timing", 72000L); 
-		long time = System.currentTimeMillis();
-		if(this.getConfig().getString("Database").equalsIgnoreCase("mysql")){
+		
+		admin=config.getString("Label.Console", "Server");
+		reason=config.getString("Label.Reason", "Unsure");
+		perms=config.getString("Messages.Permission","You do not have the required permissions.");
+		
+		PluginManager pm = getServer().getPluginManager();
+		pm.registerEvents(new UltraBanPlayerListener(this), this);
+		loadCommands();
+
+		PluginDescriptionFile pdf = this.getDescription();
+		//Storage
+		if(config.getString("Database").equalsIgnoreCase("mysql")){
 			db = new SQL(this);
 		}else{
 			db = new SQLite(this);
 		}
 		db.load();
-		
-		PluginManager pm = getServer().getPluginManager();
-		pm.registerEvents(new UltraBanPlayerListener(this), this);
-		if(config.getBoolean("serverSync.enable", false)) this.getServer().getScheduler().scheduleAsyncRepeatingTask(this,new Runnable(){
-			@Override
-			public void run() {
-				onDisable();
-				db.load();
-				System.out.println("UltraBans Sync is Enabled!");
+		//Sync
+		if(config.getBoolean("Sync.Enabled", false)){
+			long t = config.getLong("Sync.Timing", 72000L); 
+			this.getServer().getScheduler().scheduleAsyncRepeatingTask(this,new Runnable(){
+				@Override
+				public void run(){
+					onDisable();
+					db.load();
+				}
+			},1,t);	
+		}
+		//Updater
+		if(config.getBoolean("AutoUpdater.Enabled",true)){
+			Updater up = new Updater(this,pdf.getName().toLowerCase(),this.getFile(),UpdateType.DEFAULT,true);
+			if(!up.getResult().equals(UpdateResult.SUCCESS)||up.pluginFile(this.getFile().getName())){
+				if(up.getResult().equals(UpdateResult.FAIL_NOVERSION)){
+					this.getLogger().info("Unable to connect to dev.bukkit.org.");
+				}else{
+					this.getLogger().info("No Updates found on dev.bukkit.org.");
+				}
+			}else{
+				this.getLogger().info("Update "+up.getLatestVersionString()+" found please restart your server.");
 			}
-			
-		},l,l);	
-		loadCommands();
-		long diff = System.currentTimeMillis()-time;
-		this.getLogger().info(" Loaded. "+diff+"ms");
+		}
+		//Statistic Tracker
+		if(config.getBoolean("GoogleAnalytics.Enabled",true)){
+			JGoogleAnalyticsTracker tracker = new JGoogleAnalyticsTracker(pdf.getName(),pdf.getVersion(),"UA-35400100-2");
+			new Track(tracker);
+			//PluginInstances.
+			Track.track(pdf.getName()+pdf.getVersion()+" Loaded");
+			//PluginErrorLogger
+			this.getLogger().addHandler(new LoggerHandler());
+
+			//Pssfffttt... Metrics? Ha.
+		}
+		this.getLogger().info("Loaded. "+((long) (System.currentTimeMillis()-time)/1000)+" secs.");
 	}
 	public void loadCommands(){
-
 		getCommand("ban").setExecutor(new Ban(this));
 		getCommand("checkban").setExecutor(new Check(this));
 		getCommand("checkip").setExecutor(new CheckIP(this));
@@ -120,9 +155,10 @@ public class UltraBan extends JavaPlugin {
 		getCommand("warn").setExecutor(new Warn(this));
 		getCommand("permaban").setExecutor(new Perma(this));
 		getCommand("history").setExecutor(new History(this));
+		getCommand("ustatus").setExecutor(new Status(this));
+		getCommand("uping").setExecutor(new Ping(this));
 	}
 }
-
 		
 
 

@@ -1,11 +1,13 @@
-name: UltraBanLite
-version: 1.0.2
+name: UltrabansLite
+version: 2.0.1
 website: http://modcrafting.com
 author: Deathmarine
 description: >
              Administration Plugin for Bukkit.
-main: com.modcrafting.ultrabans.UltraBan
+main: com.modcrafting.ultrabans.Ultrabans
+softdepend: [Essentials]
 commands:
+#Actions#
   ban:
     description: Ban a player
     usage: /<command> {player} (-s/-a) {reason}
@@ -38,6 +40,7 @@ commands:
     description: Warns a player
     usage: /<command> {player} (-s/-a) {reason}
     permission: ultraban.warn
+#Information#
   checkban:
     description: Check if a player is banned
     usage: /<command> {player}
@@ -54,6 +57,7 @@ commands:
     description: Shows most recent entries
     usage: /<command> {amt}
     permission: ultraban.history
+#Management#
   uversion:
     description: Shows current Ultrabans Version
     usage: /<command>
@@ -78,6 +82,11 @@ commands:
     description: Import bans to default text files
     usage: /<command>
     permission: ultraban.import
+#Tools#
+  uping:
+    description: Shows the current ping of a player
+    usage: /<command> {player}
+    permission: ultraban.ping
   uhelp:
     description: Shows Help
     usage: /<command>
@@ -106,6 +115,9 @@ permissions:
       ultraban.tempban: true
       ultraban.ipban: true
       ultraban.tempipban: true
+      ultraban.ping: true
+  ultraban.ping:
+    description: Allows the user to check ping
   ultraban.ban:
     description: Allows the Administration to ban a player
   ultraban.tempban:
@@ -160,6 +172,8 @@ permissions:
       ultraban.override.tempban: true
       ultraban.override.tempipban: true
       ultraban.override.warn: true
+      ultraban.override.dupeip: true
+      ultraban.override.pingcheck: true
   ultraban.override.ban:
     description: Allows the Administration to override bans
   ultraban.override.ipban:
@@ -177,4 +191,8 @@ permissions:
   ultraban.override.warn:
     description: Allows the Administration to override warn
   ultraban.override.dupeip:
+    default: op
     description: Allows the Administration to override dupe login check
+  ultraban.override.pingcheck:
+    default: op
+    description: Allows the Administration to override ping check

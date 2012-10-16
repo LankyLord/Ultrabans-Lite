@@ -13,11 +13,11 @@ import java.util.regex.PatternSyntaxException;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 
-import com.modcrafting.ultrabans.UltraBan;
+import com.modcrafting.ultrabans.Ultrabans;
 
 public class Formatting {
-	UltraBan plugin;
-	public Formatting(UltraBan instance) {
+	Ultrabans plugin;
+	public Formatting(Ultrabans instance) {
 		plugin = instance;
 	}
 	public String expandName(String p) {
@@ -101,18 +101,19 @@ public class Formatting {
 		} catch (NumberFormatException ex) {
 			return 0;
 		}
-		if (unit.startsWith("hour"))
+		if (unit.startsWith("h")||unit.startsWith("H")){
 			sec *= 60;
-		else if (unit.startsWith("day"))
+		}else if(unit.startsWith("d")||unit.startsWith("D")){
 			sec *= (60*24);
-		else if (unit.startsWith("week"))
+		}else if(unit.startsWith("w")||unit.startsWith("W")){
 			sec *= (7*60*24);
-		else if (unit.startsWith("month"))
+		}else if(unit.startsWith("mo")||unit.startsWith("Mo")){
 			sec *= (30*60*24);
-		else if (unit.startsWith("min"))
+		}else if(unit.startsWith("m")||unit.startsWith("M")){
 			sec *= 1;
-		else if (unit.startsWith("sec"))
+		}else if(unit.startsWith("s")||unit.startsWith("S")){
 			sec /= 60;
+		}
 		return sec;
 	}
 }

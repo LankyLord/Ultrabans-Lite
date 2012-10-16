@@ -12,29 +12,28 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import com.modcrafting.ultrabans.UltraBan;
+import com.modcrafting.ultrabans.Ultrabans;
+import com.modcrafting.ultrabans.tracker.Track;
 
 public class Export implements CommandExecutor{
-	UltraBan plugin;
-	public Export(UltraBan ultraBan) {
+	Ultrabans plugin;
+	public Export(Ultrabans ultraBan) {
 		this.plugin = ultraBan;
 	}
 	public boolean onCommand(final CommandSender sender, Command command, String label, String[] args) {
+		Track.track(command.getName());
 		if(!sender.hasPermission(command.getPermission())){
-			sender.sendMessage(ChatColor.RED + "You do not have the required permissions.");
+			sender.sendMessage(ChatColor.RED+plugin.perms);
 			return true;
 		}
 		plugin.getServer().getScheduler().scheduleAsyncDelayedTask(plugin,new Runnable(){
-
 			@Override
 			public void run() {
-				try
-				{
+				try{
 					BufferedWriter banlist = new BufferedWriter(new FileWriter("banned-players.txt",true));
 					for(String p : plugin.bannedPlayers){
 						banlist.newLine();
@@ -47,13 +46,16 @@ public class Export implements CommandExecutor{
 						iplist.write(g(p));
 					}
 					iplist.close();
+				}catch(IOException e){
+					String msg = plugin.getConfig().getString("Messages.Export.Failed","Could not export ban lists.");
+					msg=plugin.util.formatMessage(msg);
+					sender.sendMessage(ChatColor.RED + msg);
+					plugin.getLogger().severe(msg);
 				}
-				catch(IOException e)          
-				{
-					plugin.getLogger().log(Level.SEVERE,"UltraBan: Couldn't write to banned-players.txt");
-				}
-				sender.sendMessage("§2Exported banlist to banned-players.txt.");
-				sender.sendMessage("§2Exported iplist to banned-ips.txt.");
+				String msg = plugin.getConfig().getString("Messages.Export.Completed","Exported banlists.");
+				msg=plugin.util.formatMessage(msg);
+				sender.sendMessage(ChatColor.GREEN + msg);
+				plugin.getLogger().severe(msg);
 			}
 			
 		});
@@ -66,7 +68,6 @@ public class Export implements CommandExecutor{
 		Date now = new Date();
 		now.setTime(System.currentTimeMillis());
 	    StringBuilder localStringBuilder = new StringBuilder();
-
 	    localStringBuilder.append(player);
 	    localStringBuilder.append("|");
 	    localStringBuilder.append(format.format(now));
@@ -80,7 +81,6 @@ public class Export implements CommandExecutor{
 	    String reason = plugin.db.getBanReason(player);
 	    if(reason.equalsIgnoreCase("")) reason = "Exported from Ultrabans";
 	    localStringBuilder.append(reason);
-
 	    return localStringBuilder.toString();
 	  }
 }

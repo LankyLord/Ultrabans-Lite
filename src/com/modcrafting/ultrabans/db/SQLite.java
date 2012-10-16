@@ -20,13 +20,15 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.bukkit.command.CommandSender;
-import com.modcrafting.ultrabans.UltraBan;
+import com.modcrafting.ultrabans.Ultrabans;
 import com.modcrafting.ultrabans.util.EditBan;
 
 public class SQLite implements Database{
-	UltraBan plugin;
-	public SQLite(UltraBan instance){
+	Ultrabans plugin;
+	String dbname;
+	public SQLite(Ultrabans instance){
 		plugin = instance;
+		dbname = plugin.getConfig().getString("SQLite.Filename", "banlist");
 	}
 	public String SQLiteCreateBansTable = "CREATE TABLE IF NOT EXISTS banlist (" +
 			"`name` TEXT," +
@@ -43,7 +45,6 @@ public class SQLite implements Database{
 			"PRIMARY KEY (`name`)" + 
 			");";
 	public Connection getSQLConnection() {
-		String dbname = plugin.getConfig().getString("sqlite-dbname", "banlist");
 		File dataFolder = new File(plugin.getDataFolder(), dbname+".db");
 		if (!dataFolder.exists()){
 			try {
@@ -191,7 +192,7 @@ public class SQLite implements Database{
 		PreparedStatement ps = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("DELETE FROMvWHERE (name = ? AND (type = 0 OR type = 1)) AND time = (SELECT time FROM banlist WHERE name = ? AND (type = 0 OR type = 1) ORDER BY time DESC LIMIT 1)");
+			ps = conn.prepareStatement("DELETE FROM banlist WHERE (name = ? AND (type = 0 OR type = 1)) AND time = (SELECT time FROM banlist WHERE name = ? AND (type = 0 OR type = 1) ORDER BY time DESC LIMIT 1)");
 			ps.setString(1, player);
 			ps.setString(2, player);
 			ps.executeUpdate();
@@ -359,6 +360,32 @@ public class SQLite implements Database{
 			return bans;
 		} catch (SQLException ex) {
 			Error.execute(plugin, ex);
+		} catch (NumberFormatException nfe){
+			plugin.getLogger().warning("Input was not a number.");
+		}
+		return null;
+	}
+	@Override
+	public List<EditBan> listRecentBans(String number){
+		Connection conn = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			Integer num = Integer.parseInt(number.trim());
+			conn = getSQLConnection();
+			ps = conn.prepareStatement("SELECT * FROM banlist WHERE type = 0 OR type = 1 ORDER BY time DESC LIMIT ?");
+			ps.setInt(1, num);
+			rs = ps.executeQuery();
+			List<EditBan> bans = new ArrayList<EditBan>();
+			while (rs.next()){
+				bans.add(new EditBan(rs.getInt("id"),rs.getString("name"),rs.getString("reason"),rs.getString("admin"),rs.getLong("time"),rs.getLong("temptime"),rs.getInt("type")));
+			}
+			close(conn,ps,rs);
+			return bans;
+		} catch (SQLException ex) {
+			Error.execute(plugin, ex);
+		} catch (NumberFormatException nfe){
+			plugin.getLogger().warning("Input was not a number.");
 		}
 		return null;
 	}
@@ -447,46 +474,6 @@ public class SQLite implements Database{
 		}
 	}
 	@Override
-	public boolean removeFromJaillist(String player) {
-		Connection conn = null;
-		PreparedStatement ps = null;
-		try {
-			conn = getSQLConnection();
-			ps = conn.prepareStatement("DELETE FROM banlist WHERE (name = ? AND type = ? AND time = (SELECT time FROM banlist WHERE name = ? AND type = ? ORDER BY time DESC LIMIT 1)");
-			ps.setString(1, player);
-			ps.setInt(2, 6);
-			ps.setString(3, player);
-			ps.setInt(4, 6);
-			ps.executeUpdate();
-			close(conn,ps,null);
-		} catch (SQLException ex) {
-			Error.execute(plugin, ex);
-			return false;
-		}
-		return true;
-		
-	}
-	@Override
-	public String getjailReason(String player) {
-		Connection conn = getSQLConnection();
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try {
-			ps = conn.prepareStatement("SELECT * FROM banlist WHERE name = ? AND type = 6 ORDER BY time DESC LIMIT 1");
-			ps.setString(1, player);
-			rs = ps.executeQuery();
-			String reason = null;
-			while (rs.next()){
-				reason = rs.getString("reason");
-			}
-			close(conn,ps,rs);
-			return reason;
-		} catch (SQLException ex) {
-			Error.execute(plugin, ex);
-		}
-		return null;
-	}
-	@Override
 	public String getAdmin(String player) {
 		Connection conn = getSQLConnection();
 		PreparedStatement ps = null;
@@ -514,7 +501,7 @@ public class SQLite implements Database{
 		ResultSet rs = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM banlistip WHERE ip = ?");
+			ps = conn.prepareStatement("SELECT * FROM banlistip WHERE lastip = ?");
 			ps.setString(1, ip);
 			rs = ps.executeQuery();
 			List<String> bans = new ArrayList<String>();

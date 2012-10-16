@@ -11,26 +11,24 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import com.modcrafting.ultrabans.UltraBan;
+import com.modcrafting.ultrabans.Ultrabans;
+import com.modcrafting.ultrabans.tracker.Track;
 
 public class Reload implements CommandExecutor{
-	UltraBan plugin;
-	public Reload(UltraBan ultraBan) {
+	Ultrabans plugin;
+	public Reload(Ultrabans ultraBan) {
 		this.plugin = ultraBan;
 	}
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-		if(sender.hasPermission(command.getPermission())){
-			plugin.reloadConfig();
-			plugin.getServer().getPluginManager().disablePlugin(plugin);
-			plugin.getServer().getPluginManager().enablePlugin(plugin);
-			sender.sendMessage("§2[UltraBan] reloaded.");
-			return true;
-		}else{
-			sender.sendMessage(ChatColor.RED + "You do not have the required permissions.");
+		Track.track(command.getName());
+		if(!sender.hasPermission(command.getPermission())){
+			sender.sendMessage(ChatColor.RED+plugin.perms);
 			return true;
 		}
+		plugin.reloadConfig();
+		plugin.getServer().getPluginManager().disablePlugin(plugin);
+		plugin.getServer().getPluginManager().enablePlugin(plugin);
+		plugin.getLogger().info("Reloaded.");
+		return true;
 	}
-	
-
-
 }

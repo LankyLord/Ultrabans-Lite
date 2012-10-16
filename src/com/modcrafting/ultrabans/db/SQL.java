@@ -14,33 +14,39 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.logging.Level;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
-import com.modcrafting.ultrabans.UltraBan;
+import com.modcrafting.ultrabans.Ultrabans;
 import com.modcrafting.ultrabans.util.EditBan;
 
 public class SQL implements Database{
-	UltraBan plugin;
-	public String mysqlTable = "banlist";
-	public String logip = "banlistip";
-	public SQL(UltraBan instance){
+	Ultrabans plugin;
+	String bantable;
+	String iptable;
+	String database;
+	String username;
+	String password;
+	public SQL(Ultrabans instance){
 		plugin = instance;
-	}
-	public void setTables(){
-		YamlConfiguration Config = (YamlConfiguration) plugin.getConfig();
-		mysqlTable = Config.getString("mysql-table","banlist");
-		logip = Config.getString("mysql-table-ip","banlistip");
+		YamlConfiguration config = (YamlConfiguration) plugin.getConfig();
+		database = config.getString("MySQL.Database","jdbc:mysql://localhost:3306/minecraft");
+		username = config.getString("MySQL.User","root");
+		password = config.getString("MySQL.Password","root");
+		bantable = config.getString("MySQL.Table","banlist");
+		iptable = config.getString("MySQL.IPTable","banlistip");
 	}
 	public Connection getSQLConnection() {
-		setTables();
-		YamlConfiguration Config = (YamlConfiguration) plugin.getConfig();
-		String mysqlDatabase = Config.getString("mysql-database","jdbc:mysql://localhost:3306/minecraft");
-		String mysqlUser = Config.getString("mysql-user","root");
-		String mysqlPassword = Config.getString("mysql-password","root");
 		try {
-			return DriverManager.getConnection(mysqlDatabase + "?autoReconnect=true&user=" + mysqlUser + "&password=" + mysqlPassword);
+			Properties info = new Properties();
+			info.put("autoReconnect", "true");
+			info.put("user", username);
+			info.put("password", password);
+			info.put("useUnicode", "true");
+			info.put("characterEncoding", "utf8");
+			return DriverManager.getConnection(database,info);
 		} catch (SQLException ex) {
 			plugin.getLogger().log(Level.SEVERE, "Unable to retreive connection", ex);
 		}
@@ -51,7 +57,7 @@ public class SQL implements Database{
 		if(conn != null){
 			PreparedStatement ps = null;
 			try{
-				ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " WHERE (type = 0 OR type = 1 OR type = 9) AND (temptime > ? OR temptime = 0)");
+				ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE (type = 0 OR type = 1 OR type = 9) AND (temptime > ? OR temptime = 0)");
 				ps.setLong(1, System.currentTimeMillis()/1000);
 				ResultSet rs = ps.executeQuery();
 				while (rs.next()){
@@ -83,26 +89,23 @@ public class SQL implements Database{
 			"`id` int(11) NOT NULL AUTO_INCREMENT," + 
 			"`type` int(1) NOT NULL DEFAULT '0'," + 
 			"PRIMARY KEY (`id`) USING BTREE" + 
-			") ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;";
+			") ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;";
 	public String SQLCreateBanipTable = "CREATE TABLE IF NOT EXISTS %table% (" +
 			"`name` varchar(32) NOT NULL," + 
 			"`lastip` tinytext NOT NULL," + 
 			"PRIMARY KEY (`name`)" + 
-			") ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;";
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;";
 	@Override
 	public void load() {
-
-		String tloc = plugin.getConfig().getString("mysql-table","banlist");
-		String lloc = plugin.getConfig().getString("mysql-table-ip","banlistip");
 		Connection conn = getSQLConnection();
 		PreparedStatement s;
 		String str;
 		try {
 			str=SQLCreateBansTable;
-			s = conn.prepareStatement(str.replaceAll("%table%",tloc));
+			s = conn.prepareStatement(str.replaceAll("%table%",bantable));
 			s.execute();
 			str=SQLCreateBanipTable;
-			s = conn.prepareStatement(str.replaceAll("%table%",lloc));
+			s = conn.prepareStatement(str.replaceAll("%table%",iptable));
 			s.execute();
 			s.close();
 		} catch (SQLException e) {
@@ -117,7 +120,7 @@ public class SQL implements Database{
 		ResultSet rs = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " WHERE (type = 0)");
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE (type = 0)");
 			rs = ps.executeQuery();
 			List<String> list = new ArrayList<String>();
 			while (rs.next()){
@@ -136,7 +139,7 @@ public class SQL implements Database{
 		PreparedStatement ps = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("REPLACE INTO " + logip+ " (name,lastip) VALUES(?,?)");
+			ps = conn.prepareStatement("REPLACE INTO " + iptable+ " (name,lastip) VALUES(?,?)");
 			ps.setString(1, pName);
 			ps.setString(2, logIp);
 			ps.executeUpdate();
@@ -153,7 +156,7 @@ public class SQL implements Database{
 		ResultSet rs = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM " + logip+ " WHERE name = ?");
+			ps = conn.prepareStatement("SELECT * FROM " + iptable+ " WHERE name = ?");
 			ps.setString(1, pName);
 			rs = ps.executeQuery();
 			String ip = null;
@@ -174,7 +177,7 @@ public class SQL implements Database{
 		ResultSet rs = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM " + logip+ " WHERE lastip = ?");
+			ps = conn.prepareStatement("SELECT * FROM " + iptable+ " WHERE lastip = ?");
 			ps.setString(1, ip);
 			rs = ps.executeQuery();
 			String name = null;
@@ -194,7 +197,7 @@ public class SQL implements Database{
 		PreparedStatement ps = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("DELETE FROM " + mysqlTable + " WHERE name = ? AND (type = 0 OR type = 1) ORDER BY time DESC LIMIT 1");
+			ps = conn.prepareStatement("DELETE FROM " + bantable + " WHERE name = ? AND (type = 0 OR type = 1) ORDER BY time DESC LIMIT 1");
 			ps.setString(1, player);
 			ps.executeUpdate();
 			close(conn,ps,null);
@@ -212,7 +215,7 @@ public class SQL implements Database{
 		ResultSet rs = null;
 		try{
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " WHERE name = ?");
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE name = ?");
 			ps.setString(1, bname);
 			rs = ps.executeQuery();
 			boolean set = false;
@@ -232,7 +235,7 @@ public class SQL implements Database{
 		PreparedStatement ps = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("INSERT INTO " + mysqlTable + " (name,reason,admin,time,temptime,type) VALUES(?,?,?,?,?,?)");
+			ps = conn.prepareStatement("INSERT INTO " + bantable + " (name,reason,admin,time,temptime,type) VALUES(?,?,?,?,?,?)");
 			ps.setLong(5, tempTime);
 			ps.setString(1, player);
 			ps.setString(2, reason);
@@ -251,7 +254,7 @@ public class SQL implements Database{
 		PreparedStatement ps = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("INSERT INTO " + mysqlTable + " (name,reason,admin,time,temptime,type) VALUES(?,?,?,?,?,?)");
+			ps = conn.prepareStatement("INSERT INTO " + bantable + " (name,reason,admin,time,temptime,type) VALUES(?,?,?,?,?,?)");
 			ps.setLong(5, tempTime);
 			ps.setString(1, player);
 			ps.setString(2, reason);
@@ -270,7 +273,7 @@ public class SQL implements Database{
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " WHERE name = ? AND (type = 0 OR type = 1) ORDER BY time DESC LIMIT 1");
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE name = ? AND (type = 0 OR type = 1) ORDER BY time DESC LIMIT 1");
 			ps.setString(1, player);
 			rs = ps.executeQuery();
 			String reason = "";
@@ -291,7 +294,7 @@ public class SQL implements Database{
 		ResultSet rs = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT lastip FROM " + logip+ " WHERE name = ? AND lastip = ?");
+			ps = conn.prepareStatement("SELECT lastip FROM " + iptable+ " WHERE name = ? AND lastip = ?");
 			ps.setString(1, player);
 			ps.setString(2, ip);
 			rs = ps.executeQuery();
@@ -312,7 +315,7 @@ public class SQL implements Database{
 		PreparedStatement ps = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("UPDATE " + logip+ " SET lastip = ? WHERE name = ?");
+			ps = conn.prepareStatement("UPDATE " + iptable+ " SET lastip = ? WHERE name = ?");
 			ps.setString(1, ip);
 			ps.setString(2, p);
 			ps.executeUpdate();
@@ -328,7 +331,7 @@ public class SQL implements Database{
 		ResultSet rs = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " WHERE name = ?");
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE name = ?");
 			ps.setString(1, name);
 			rs = ps.executeQuery();
 			List<EditBan> bans = new ArrayList<EditBan>();
@@ -347,10 +350,10 @@ public class SQL implements Database{
 		Connection conn = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
-		Integer num = Integer.parseInt(number.trim());
 		try {
+			Integer num = Integer.parseInt(number.trim());
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " ORDER BY time DESC LIMIT ?");
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " ORDER BY time DESC LIMIT ?");
 			ps.setInt(1, num);
 			rs = ps.executeQuery();
 			List<EditBan> bans = new ArrayList<EditBan>();
@@ -361,6 +364,33 @@ public class SQL implements Database{
 			return bans;
 		} catch (SQLException ex) {
 			Error.execute(plugin, ex);
+		} catch (NumberFormatException nfe){
+			plugin.getLogger().warning("Input was not a number.");
+		}
+		return null;
+	}
+
+	@Override
+	public List<EditBan> listRecentBans(String number){
+		Connection conn = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			Integer num = Integer.parseInt(number.trim());
+			conn = getSQLConnection();
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE type = 0 OR type = 1 ORDER BY time DESC LIMIT ?");
+			ps.setInt(1, num);
+			rs = ps.executeQuery();
+			List<EditBan> bans = new ArrayList<EditBan>();
+			while (rs.next()){
+				bans.add(new EditBan(rs.getInt("id"),rs.getString("name"),rs.getString("reason"),rs.getString("admin"),rs.getLong("time"),rs.getLong("temptime"),rs.getInt("type")));
+			}
+			close(conn,ps,rs);
+			return bans;
+		} catch (SQLException ex) {
+			Error.execute(plugin, ex);
+		} catch (NumberFormatException nfe){
+			plugin.getLogger().warning("Input was not a number.");
 		}
 		return null;
 	}
@@ -371,7 +401,7 @@ public class SQL implements Database{
 		ResultSet rs = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " WHERE name = ?");
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE name = ?");
 			ps.setString(1, pName);
 			rs = ps.executeQuery();
 			EditBan eb = null;
@@ -392,7 +422,7 @@ public class SQL implements Database{
 		ResultSet rs = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " WHERE name = ? AND type = ?");
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE name = ? AND type = ?");
 			ps.setString(1, Name);
 			ps.setInt(2, 2);
 			rs = ps.executeQuery();
@@ -414,7 +444,7 @@ public class SQL implements Database{
 		ResultSet rs = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " WHERE id = ?");
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE id = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			EditBan eb = null;
@@ -434,7 +464,7 @@ public class SQL implements Database{
 		PreparedStatement ps = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("UPDATE " + mysqlTable + " SET name = ?, reason = ?, admin = ?, time = ?, temptime = ?, type = ? WHERE id = ?");
+			ps = conn.prepareStatement("UPDATE " + bantable + " SET name = ?, reason = ?, admin = ?, time = ?, temptime = ?, type = ? WHERE id = ?");
 			ps.setLong(5, ban.endTime);
 			ps.setString(1, ban.name);
 			ps.setString(2, ban.reason);
@@ -449,51 +479,12 @@ public class SQL implements Database{
 		}
 	}
 	@Override
-	public boolean removeFromJaillist(String player) {
-		Connection conn = null;
-		PreparedStatement ps = null;
-		try {
-			conn = getSQLConnection();
-				ps = conn.prepareStatement("DELETE FROM " + mysqlTable + " WHERE name = ? AND type = ? ORDER BY time DESC LIMIT 1");
-				ps.setString(1, player);
-				ps.setInt(2, 6);
-			
-			ps.executeUpdate();
-			close(conn,ps,null);
-		} catch (SQLException ex) {
-			Error.execute(plugin, ex);
-			return false;
-		}
-		return true;
-		
-	}
-	@Override
-	public String getjailReason(String player) {
-		Connection conn = getSQLConnection();
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try {
-			ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " WHERE name = ? AND type = 6 ORDER BY time DESC LIMIT 1");
-			ps.setString(1, player);
-			rs = ps.executeQuery();
-			String reason = null;
-			while (rs.next()){
-				reason = rs.getString("reason");
-			}
-			close(conn,ps,rs);
-			return reason;
-		} catch (SQLException ex) {
-			Error.execute(plugin, ex);
-		}
-		return null;
-	}
-	@Override
 	public String getAdmin(String player) {
 		Connection conn = getSQLConnection();
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			ps = conn.prepareStatement("SELECT * FROM " + mysqlTable + " WHERE name = ? AND (type = 0 OR type = 1) ORDER BY time DESC LIMIT 1");
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE name = ? AND (type = 0 OR type = 1) ORDER BY time DESC LIMIT 1");
 			ps.setString(1, player);
 			rs = ps.executeQuery();
 			String admin = null;
@@ -515,7 +506,7 @@ public class SQL implements Database{
 		ResultSet rs = null;
 		try {
 			conn = getSQLConnection();
-			ps = conn.prepareStatement("SELECT * FROM " + logip + " WHERE ip = ?");
+			ps = conn.prepareStatement("SELECT * FROM " + iptable + " WHERE lastip = ?");
 			ps.setString(1, ip);
 			rs = ps.executeQuery();
 			List<String> bans = new ArrayList<String>();

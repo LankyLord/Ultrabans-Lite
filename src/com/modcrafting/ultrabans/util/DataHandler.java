@@ -11,20 +11,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
-import com.modcrafting.ultrabans.UltraBan;
+import com.modcrafting.ultrabans.Ultrabans;
 
 public class DataHandler {
-	UltraBan plugin;
-	public DataHandler(UltraBan instance) {
+	Ultrabans plugin;
+	public DataHandler(Ultrabans instance) {
 		plugin = instance;
 	}
 	public void createDefaultConfiguration(String name) {
 		File actual = new File(plugin.getDataFolder(), name);
 		if (!actual.exists()) {
 
-			InputStream input =
-				this.getClass().getResourceAsStream("/" + name);
+			InputStream input =	this.getClass().getResourceAsStream("/" + name);
 			if (input != null) {
 				FileOutputStream output = null;
 
@@ -53,5 +51,11 @@ public class DataHandler {
 				}
 			}
 		}
+	}
+	public boolean deletePlyrdat(String name){
+		if(plugin.getServer().getOfflinePlayer(name)!=null&&!plugin.getServer().getOfflinePlayer(name).isOnline()){
+			 return new File(plugin.getServer().getWorlds().get(0).getName()+"/players/",name+".dat").delete();
+		}
+		return false;
 	}
 }
