@@ -532,4 +532,24 @@ public class SQL implements Database{
 			Error.close(plugin, ex);
 		}
 	}
+	@Override
+	public void clearWarns(String player) {
+		Connection conn = getSQLConnection();
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE name = ? AND type = 2 ORDER BY time DESC");
+			ps.setString(1, player);
+			rs = ps.executeQuery();
+			while (rs.next()){
+				int i = rs.getInt("id");
+				ps = conn.prepareStatement("DELETE FROM " + bantable + " WHERE id = ?");
+				ps.setInt(1, i);
+				ps.executeUpdate();
+			}
+			close(conn,ps,rs);
+		} catch (SQLException ex) {
+			Error.execute(plugin, ex);
+		}
+	}
 }

@@ -29,7 +29,7 @@ public class Help implements CommandExecutor{
 				page = 1;
 			}
 		}
-		plugin.getServer().dispatchCommand(sender, "help Ultrabans "+page);
+		plugin.getServer().dispatchCommand(sender, "help Ultrabanslite "+page);
 		return true;
 	}
 
