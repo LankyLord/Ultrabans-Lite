@@ -18,7 +18,6 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.boxysystems.jgoogleanalytics.JGoogleAnalyticsTracker;
 import com.modcrafting.ultrabans.commands.Ban;
 import com.modcrafting.ultrabans.commands.Check;
 import com.modcrafting.ultrabans.commands.CheckIP;
@@ -43,11 +42,9 @@ import com.modcrafting.ultrabans.db.Database;
 import com.modcrafting.ultrabans.db.SQL;
 import com.modcrafting.ultrabans.db.SQLite;
 import com.modcrafting.ultrabans.listeners.UltraBanPlayerListener;
-import com.modcrafting.ultrabans.tracker.Track;
 import com.modcrafting.ultrabans.util.DataHandler;
 import com.modcrafting.ultrabans.util.EditBan;
 import com.modcrafting.ultrabans.util.Formatting;
-import com.modcrafting.ultrabans.util.LoggerHandler;
 
 public class Ultrabans extends JavaPlugin {
 	public HashSet<String> bannedPlayers = new HashSet<String>();
@@ -77,6 +74,7 @@ public class Ultrabans extends JavaPlugin {
 		bannedIPs.clear();
 		banEditors.clear();
 	}
+	@SuppressWarnings("deprecation")
 	public void onEnable() {
 		long time = System.currentTimeMillis();
 		this.getDataFolder().mkdir();
@@ -122,17 +120,6 @@ public class Ultrabans extends JavaPlugin {
 			}else{
 				this.getLogger().info("Update "+up.getLatestVersionString()+" found please restart your server.");
 			}
-		}
-		//Statistic Tracker
-		if(config.getBoolean("GoogleAnalytics.Enabled",true)){
-			JGoogleAnalyticsTracker tracker = new JGoogleAnalyticsTracker(pdf.getName(),pdf.getVersion(),"UA-35400100-2");
-			new Track(tracker);
-			//PluginInstances.
-			Track.track(pdf.getName()+pdf.getVersion()+" Loaded");
-			//PluginErrorLogger
-			this.getLogger().addHandler(new LoggerHandler());
-
-			//Pssfffttt... Metrics? Ha.
 		}
 		this.getLogger().info("Loaded. "+((long) (System.currentTimeMillis()-time)/1000)+" secs.");
 	}
