@@ -24,7 +24,6 @@ public class CheckIP implements CommandExecutor{
 	public CheckIP(Ultrabans ultraBan) {
 		this.plugin = ultraBan;
 	}
-	@SuppressWarnings("deprecation")
 	public boolean onCommand(final CommandSender sender, Command command, String label, final String[] args) {
 		
 		if(!sender.hasPermission(command.getPermission())){
@@ -32,7 +31,7 @@ public class CheckIP implements CommandExecutor{
 			return true;
 		}
 		if (args.length < 1) return false;
-		plugin.getServer().getScheduler().scheduleAsyncDelayedTask(plugin,new Runnable(){
+		plugin.getServer().getScheduler().runTask(plugin,new Runnable(){
 
 			@Override
 			public void run() {
