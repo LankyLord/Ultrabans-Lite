@@ -7,8 +7,6 @@
     <path id="Ultrabans.classpath">
         <pathelement location="bin"/>
         <pathelement location="lib/craftbukkit-1.4.6-R0.1-Dev.jar"/>
-        <pathelement location="lib/craftbukkit-1.4.5-R1.0.jar"/>
-        <pathelement location="lib/craftbukkit-1.4.5-R0.1.jar"/>
     </path>
 
 	<target name="init" description="Initialize directories, etc.">
@@ -35,28 +33,8 @@
             <classpath refid="Ultrabans.classpath"/>
         </javac>
 	</target>
-	
-	<target name="document" depends="compile" description="Create JavaDocs">
-	        <delete dir="javadoc" includes="**/*" failonerror="false" />
-	            <javadoc packagenames="com.modcrafting.*"
-	                            sourcepath="src"
-	                            destdir="javadoc"
-	                            access="public"
-	                            windowtitle="Ultrabans"
-	                            verbose="false"
-	                            author="true"
-	                            version="true">
-	                <link href="http://java.sun.com/j2se/1.5.0/docs/api/" />
-	                <link href="http://jd.bukkit.org/apidocs/" />
 
-	                <classpath refid="Ultrabans.classpath"/>
-	                <bottom>
-	                    <![CDATA[<b>deathmarine, 2012</b>]]>
-	                </bottom>
-	            </javadoc>
-	    </target>
-
-	<target name="package" depends="document" description="Make the distributable jar file">
+	<target name="package" depends="compile" description="Make the distributable jar file">
 		<copy todir="bin" overwrite="true">
 			<fileset dir="." includes="plugin.yml,config.yml" />
             <filterset>

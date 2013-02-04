@@ -23,6 +23,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 
 import com.modcrafting.ultrabans.Ultrabans;
+import com.modcrafting.ultrabans.util.Formatting;
 
 public class UltraBanPlayerListener implements Listener{
 	Ultrabans plugin;
@@ -42,69 +43,74 @@ public class UltraBanPlayerListener implements Listener{
 	public void onPlayerLogin(PlayerLoginEvent event){
 		Player player = event.getPlayer();
 		if(plugin.bannedPlayers.contains(player.getName().toLowerCase())){
-			String reason = plugin.db.getBanReason(player.getName());
-			String admin = plugin.db.getAdmin(player.getName());
-			if(admin==null) admin = plugin.admin;
-			if(reason==null) reason = plugin.reason;
+			String reason = plugin.getUBDatabase().getBanReason(player.getName());
+			String admin = plugin.getUBDatabase().getAdmin(player.getName());
+			if(admin==null) admin = Ultrabans.DEFAULT_ADMIN;
+			if(reason==null) reason = Ultrabans.DEFAULT_REASON;
 			String bcmsg = config.getString("Messages.Ban.Login", "%admin% banned you from this server! Reason: %reason%!");
-			if(bcmsg.contains(plugin.regexAdmin)) bcmsg = bcmsg.replaceAll(plugin.regexAdmin, admin);
-			if(bcmsg.contains(plugin.regexReason)) bcmsg = bcmsg.replaceAll(plugin.regexReason, reason);
-			bcmsg=plugin.util.formatMessage(bcmsg);
+			if(bcmsg.contains(Ultrabans.ADMIN)) bcmsg = bcmsg.replaceAll(Ultrabans.ADMIN, admin);
+			if(bcmsg.contains(Ultrabans.REASON)) bcmsg = bcmsg.replaceAll(Ultrabans.REASON, reason);
+			bcmsg=Formatting.formatMessage(bcmsg);
 			event.disallow(PlayerLoginEvent.Result.KICK_BANNED, bcmsg);
 		}
 		if(plugin.tempBans.get(player.getName().toLowerCase()) != null){
-			String reason = plugin.db.getBanReason(player.getName());
-			String admin = plugin.db.getAdmin(player.getName());
-			if(admin==null) admin = plugin.admin;
-			if(reason==null) reason = plugin.reason;
+			String reason = plugin.getUBDatabase().getBanReason(player.getName());
+			String admin = plugin.getUBDatabase().getAdmin(player.getName());
+			if(admin==null) admin = Ultrabans.DEFAULT_ADMIN;
+			if(reason==null) reason = Ultrabans.DEFAULT_REASON;
 			long tempTime = plugin.tempBans.get(player.getName().toLowerCase());
 			long diff = tempTime - (System.currentTimeMillis()/1000);
 			if(diff <= 0){
-				String ip = plugin.db.getAddress(player.getName());
+				String ip = plugin.getUBDatabase().getAddress(player.getName());
 				if(plugin.bannedIPs.contains(ip)){
 					plugin.bannedIPs.remove(ip);
 					Bukkit.unbanIP(ip);
 				}
 				plugin.tempBans.remove(player.getName().toLowerCase());
 				plugin.bannedPlayers.remove(player.getName().toLowerCase());
-				plugin.db.removeFromBanlist(player.getName().toLowerCase());
-				plugin.db.addPlayer(player.getName(), "Untempbanned: " + reason, admin, 0, 5);
+				plugin.getUBDatabase().removeFromBanlist(player.getName().toLowerCase());
+				plugin.getUBDatabase().addPlayer(player.getName(), "Untempbanned: " + reason, admin, 0, 5);
 				return;
 			}
 			Date date = new Date();
 			date.setTime(tempTime*1000);
 			String dateStr = date.toString();
 			String msgvic = config.getString("Messages.TempBan.Login", "You have been tempbanned by %admin% for %time%. Reason: %reason%!");
-			if(msgvic.contains(plugin.regexAdmin)) msgvic = msgvic.replaceAll(plugin.regexAdmin, admin);
-			if(msgvic.contains(plugin.regexReason)) msgvic = msgvic.replaceAll(plugin.regexReason, reason);
-			if(msgvic.contains("%time%")) msgvic = msgvic.replaceAll("%time%", dateStr.substring(4, 19));
-			msgvic=plugin.util.formatMessage(msgvic);
+			if(msgvic.contains(Ultrabans.ADMIN)) msgvic = msgvic.replaceAll(Ultrabans.ADMIN, admin);
+			if(msgvic.contains(Ultrabans.REASON)) msgvic = msgvic.replaceAll(Ultrabans.REASON, reason);
+			if(msgvic.contains(Ultrabans.TIME)) msgvic = msgvic.replaceAll(Ultrabans.TIME, dateStr.substring(4, 19));
+			msgvic=Formatting.formatMessage(msgvic);
 			event.disallow(PlayerLoginEvent.Result.KICK_OTHER, msgvic);
 			return;
 		}
+		if(config.getBoolean("Lockdown", false)&&!player.hasPermission("ultraban.override.lockdown")){
+			String lockMsgLogin = config.getString("Messages.Lockdown.LoginMsg", "Server is under a lockdown, Try again later!");
+			lockMsgLogin=Formatting.formatMessage(lockMsgLogin);
+			event.disallow(PlayerLoginEvent.Result.KICK_OTHER, lockMsgLogin);
+			plugin.getLogger().info(player.getName() + " attempted to join during lockdown.");
+		}
 	}
-	@SuppressWarnings("deprecation")
 	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
 	public void onPlayerJoin(final PlayerJoinEvent event){
 		final Player player = event.getPlayer();
 		final String ip = player.getAddress().getAddress().getHostAddress();
-		plugin.db.setAddress(player.getName().toLowerCase(), ip);
+		plugin.getUBDatabase().setAddress(player.getName().toLowerCase(), ip);
 		if(plugin.bannedIPs.contains(ip)){
 			event.setJoinMessage(null);
 			String adminMsg = config.getString("Messages.IPBan.Login", "Your IP is banned!");
-			adminMsg=plugin.util.formatMessage(adminMsg);
+			adminMsg=Formatting.formatMessage(adminMsg);
 			player.kickPlayer(adminMsg);
 		}
-		if(!plugin.db.matchAddress(player.getName(), ip)){
-			plugin.db.updateAddress(player.getName(), ip);
+		if(!plugin.getUBDatabase().matchAddress(player.getName(), ip)){
+			plugin.getUBDatabase().updateAddress(player.getName(), ip);
 		}
 		if(!player.hasPermission("ultraban.override.dupeip")&&config.getBoolean("Login.DupeCheck.Enable", true)){
-			plugin.getServer().getScheduler().scheduleAsyncDelayedTask(plugin,new Runnable(){
+			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin,new Runnable(){
 				@Override
 				public void run() {
-					String ip = plugin.db.getAddress(player.getName());
+					String ip = plugin.getUBDatabase().getAddress(player.getName());
 					if(ip != null){
-						List<String> list = plugin.db.listPlayers(ip);
+						List<String> list = plugin.getUBDatabase().listPlayers(ip);
 						for(Player admin:plugin.getServer().getOnlinePlayers()){
 							if(admin.hasPermission("ultraban.dupeip")){
 								for(String name:list){
@@ -116,31 +122,8 @@ public class UltraBanPlayerListener implements Listener{
 				}
 			},20L);			
 		}
-		if(config.getBoolean("Login.PingCheck.Enable",true)){
-			boolean p=false;
-
-			int ping = 0;
-			if(version.equals("v1_4_6")){
-				ping = ((org.bukkit.craftbukkit.v1_4_6.entity.CraftPlayer) player).getHandle().ping;
-			}else if(version.equals("v1_4_5")){
-				ping = ((org.bukkit.craftbukkit.v1_4_5.entity.CraftPlayer) player).getHandle().ping;
-			}else{
-				ping = ((org.bukkit.craftbukkit.entity.CraftPlayer) player).getHandle().ping;
-			}
-			p = checkPlayerPing(player, ping);
-			for(Player admin:plugin.getServer().getOnlinePlayers()){
-				if(admin.hasPermission("ultraban.ping")){
-					if(p){
-						admin.sendMessage(ChatColor.GRAY + "Player: " + player.getName() + " was kicked for High Ping!");
-					}else{
-						admin.sendMessage(ChatColor.GRAY + "Player: " + player.getName() + " Ping: "+String.valueOf(ping)+"ms");						
-					}
-					
-				}
-			}
-		}
 		if(config.getBoolean("Login.ProxyPingBack.Enable",false)){ //TODO UnderConstruction
-			plugin.getServer().getScheduler().scheduleAsyncDelayedTask(plugin, new Runnable(){
+			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable(){
 				@Override
 				public void run() {
 					try {
@@ -159,18 +142,5 @@ public class UltraBanPlayerListener implements Listener{
 			});
 		}
 		plugin.getLogger().info("Logged " + player.getName() + " connecting from ip:" + ip);
-	}
-	private boolean checkPlayerPing(Player player,int ping){
-		int pingout =config.getInt("Login.PingCheck.MaxPing",500);
-		if(ping>pingout&&!player.hasPermission("ultraban.override.pingcheck")){
-			String msgvic = config.getString("Messages.Kick.MsgToVictim", "You have been kicked by %admin%. Reason: %reason%");
-			if(msgvic.contains(plugin.regexAdmin)) msgvic = msgvic.replaceAll(plugin.regexAdmin, "Ultrabans");
-			if(msgvic.contains(plugin.regexReason)) msgvic = msgvic.replaceAll(plugin.regexReason, "High Ping Rate");
-			msgvic=plugin.util.formatMessage(msgvic);
-			player.kickPlayer(msgvic);
-			return true;
-		}
-		//pass
-		return false;
 	}
 }

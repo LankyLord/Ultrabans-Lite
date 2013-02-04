@@ -7,7 +7,6 @@
  */
 package com.modcrafting.ultrabans.commands;
 
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -20,13 +19,14 @@ public class Reload implements CommandExecutor{
 	}
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if(!sender.hasPermission(command.getPermission())){
-			sender.sendMessage(ChatColor.RED+plugin.perms);
+			sender.sendMessage(Ultrabans.DEFAULT_DENY_MESSAGE);
 			return true;
 		}
 		plugin.reloadConfig();
 		plugin.getServer().getPluginManager().disablePlugin(plugin);
 		plugin.getServer().getPluginManager().enablePlugin(plugin);
-		plugin.getLogger().info("Reloaded.");
+		if(plugin.getLog())
+			plugin.getLogger().info("Reloaded.");
 		return true;
 	}
 }
