@@ -67,6 +67,7 @@ public class Ultrabans extends JavaPlugin {
 	private static Ultrabans constant;
 	private boolean log;
 	
+  @Override
 	public void onDisable() {
 		this.getServer().getScheduler().cancelTasks(this);
 		tempBans.clear();
@@ -74,6 +75,7 @@ public class Ultrabans extends JavaPlugin {
 		bannedIPs.clear();
 		banEditors.clear();
 	}
+  @Override
 	public void onEnable() {
 		setConstant(this);
 		long time = System.currentTimeMillis();

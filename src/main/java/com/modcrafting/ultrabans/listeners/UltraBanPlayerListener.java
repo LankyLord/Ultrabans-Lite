@@ -141,6 +141,6 @@ public class UltraBanPlayerListener implements Listener{
 				
 			});
 		}
-		plugin.getLogger().info("Logged " + player.getName() + " connecting from ip:" + ip);
+		plugin.getLogger().info("Logged " + player.getName() + " connecting from IP: " + ip);
 	}
 }
