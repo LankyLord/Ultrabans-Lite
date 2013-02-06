@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import com.modcrafting.ultrabans.Ultrabans;
+import com.modcrafting.ultrabans.util.BanType;
 import com.modcrafting.ultrabans.util.EditBan;
 
 public class SQL implements Database {
@@ -64,7 +65,9 @@ public class SQL implements Database {
       }
 
       PreparedStatement ps =
-              conn.prepareStatement("SELECT * FROM " + bantable + " WHERE (type = 0 OR type = 1 OR type = 9) AND (temptime > ? OR temptime = 0)");
+              conn.prepareStatement("SELECT * FROM " + bantable
+              + " WHERE (type = " + BanType.BAN + " OR type = " + BanType.IPBAN + " OR type = " + BanType.PERMA
+              + ") AND (temptime > ? OR temptime = 0)");
       ps.setLong(1, System.currentTimeMillis() / 1000);
       ResultSet rs = ps.executeQuery();
       while (rs.next()) {
@@ -84,7 +87,7 @@ public class SQL implements Database {
       plugin.getLogger().log(Level.SEVERE, "Unable to retreive connection", e);
     }
   }
-  public String SQLCreateBansTable = "CREATE TABLE IF NOT EXISTS %table% ("
+  private final String SQLCreateBansTable = "CREATE TABLE IF NOT EXISTS %table% ("
           + "`name` varchar(32) NOT NULL,"
           + "`reason` text NOT NULL,"
           + "`admin` varchar(32) NOT NULL,"
@@ -94,7 +97,7 @@ public class SQL implements Database {
           + "`type` int(1) NOT NULL DEFAULT '0',"
           + "PRIMARY KEY (`id`) USING BTREE"
           + ") ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;";
-  public String SQLCreateBanipTable = "CREATE TABLE IF NOT EXISTS %table% ("
+  private final String SQLCreateBanipTable = "CREATE TABLE IF NOT EXISTS %table% ("
           + "`name` varchar(32) NOT NULL,"
           + "`lastip` tinytext NOT NULL,"
           + "PRIMARY KEY (`name`)"
@@ -125,7 +128,7 @@ public class SQL implements Database {
       if (conn == null || conn.isClosed()) {
         conn = getSQLConnection();
       }
-      PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE (type = 0)");
+      PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE (type = " + BanType.BAN + ")");
       ResultSet rs = ps.executeQuery();
       List<String> list = new ArrayList<String>();
       while (rs.next()) {
@@ -204,7 +207,9 @@ public class SQL implements Database {
       if (conn == null || conn.isClosed()) {
         conn = getSQLConnection();
       }
-      PreparedStatement ps = conn.prepareStatement("DELETE FROM " + bantable + " WHERE name = ? AND (type = 0 OR type = 1) ORDER BY time DESC LIMIT 1");
+      PreparedStatement ps = conn.prepareStatement(
+              "DELETE FROM " + bantable + " WHERE name = ? AND (type = " + BanType.BAN + " OR type = " + BanType.IPBAN + ") ORDER BY time DESC LIMIT 1"
+              );
       ps.setString(1, player);
       ps.executeUpdate();
       close(ps, null);
@@ -285,7 +290,7 @@ public class SQL implements Database {
       if (conn == null || conn.isClosed()) {
         conn = getSQLConnection();
       }
-      PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE name = ? AND (type = 0 OR type = 1) ORDER BY time DESC LIMIT 1");
+      PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE name = ? AND (type = " + BanType.BAN + " OR type = " + BanType.IPBAN + ") ORDER BY time DESC LIMIT 1");
       ps.setString(1, player);
       ResultSet rs = ps.executeQuery();
       String reason = "";
@@ -390,7 +395,7 @@ public class SQL implements Database {
       if (conn == null || conn.isClosed()) {
         conn = getSQLConnection();
       }
-      PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE type = 0 OR type = 1 ORDER BY time DESC LIMIT ?");
+      PreparedStatement ps = conn.prepareStatement("SELECT * FROM " + bantable + " WHERE type = " + BanType.BAN + " OR type = " + BanType.IPBAN + " ORDER BY time DESC LIMIT ?");
       ps.setInt(1, num);
       ResultSet rs = ps.executeQuery();
       List<EditBan> bans = new ArrayList<EditBan>();
@@ -563,7 +568,7 @@ public class SQL implements Database {
       if (rs != null) {
         rs.close();
       }
-      if (conn != null || !conn.isClosed()) {
+      if (conn != null) {
         conn.close();
       }
     } catch (SQLException ex) {

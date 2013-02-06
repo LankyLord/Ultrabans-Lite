@@ -83,10 +83,6 @@ commands:
     usage: /<command>
     permission: ultraban.import
 #Tools#
-  uping:
-    description: Shows the current ping of a player
-    usage: /<command> {player}
-    permission: ultraban.ping
   uhelp:
     description: Shows Help
     usage: /<command>
@@ -115,9 +111,6 @@ permissions:
       ultraban.tempban: true
       ultraban.ipban: true
       ultraban.tempipban: true
-      ultraban.ping: true
-  ultraban.ping:
-    description: Allows the user to check ping
   ultraban.ban:
     description: Allows the Administration to ban a player
   ultraban.tempban:
@@ -173,7 +166,6 @@ permissions:
       ultraban.override.tempipban: true
       ultraban.override.warn: true
       ultraban.override.dupeip: true
-      ultraban.override.pingcheck: true
   ultraban.override.ban:
     description: Allows the Administration to override bans
   ultraban.override.ipban:
@@ -193,6 +185,3 @@ permissions:
   ultraban.override.dupeip:
     default: op
     description: Allows the Administration to override dupe login check
-  ultraban.override.pingcheck:
-    default: op
-    description: Allows the Administration to override ping check

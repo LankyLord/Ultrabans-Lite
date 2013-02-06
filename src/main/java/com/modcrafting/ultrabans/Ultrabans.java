@@ -33,7 +33,6 @@ import com.modcrafting.ultrabans.commands.Import;
 import com.modcrafting.ultrabans.commands.Ipban;
 import com.modcrafting.ultrabans.commands.Kick;
 import com.modcrafting.ultrabans.commands.Perma;
-import com.modcrafting.ultrabans.commands.Ping;
 import com.modcrafting.ultrabans.commands.Reload;
 import com.modcrafting.ultrabans.commands.Status;
 import com.modcrafting.ultrabans.commands.Tempban;
@@ -85,7 +84,7 @@ public class Ultrabans extends JavaPlugin {
     log = config.getBoolean("Log.Enabled", true);
     if (config.getDouble("Config.Version") < Double.parseDouble(this.getDescription().getVersion().substring(0, 1))) {
       File file = new File(this.getDataFolder(), "/config.yml");
-      if (file.delete()) {
+      if (!file.exists()) {
         this.saveDefaultConfig();
       }
     }
@@ -152,7 +151,6 @@ public class Ultrabans extends JavaPlugin {
     getCommand("permaban").setExecutor(new Perma(this));
     getCommand("history").setExecutor(new History(this));
     getCommand("ustatus").setExecutor(new Status(this));
-    getCommand("uping").setExecutor(new Ping(this));
   }
 
   public static Ultrabans getPlugin() {
