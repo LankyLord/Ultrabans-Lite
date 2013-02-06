@@ -12,19 +12,21 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import com.modcrafting.ultrabans.Ultrabans;
 
-public class Version implements CommandExecutor{
-	Ultrabans plugin;
-	public Version(Ultrabans ultraBan) {
-		this.plugin = ultraBan;
-	}
-	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-		if(!sender.hasPermission(command.getPermission())){
-			sender.sendMessage(Ultrabans.DEFAULT_DENY_MESSAGE);
-			return true;
-		}
-		plugin.getServer().dispatchCommand(sender, "version Ultrabans");
-		return true;
-	}
-	
-}
+public class Version implements CommandExecutor {
 
+  Ultrabans plugin;
+
+  public Version(Ultrabans ultraBan) {
+    this.plugin = ultraBan;
+  }
+
+  @Override
+  public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    if (!sender.hasPermission(command.getPermission())) {
+      sender.sendMessage(Ultrabans.DEFAULT_DENY_MESSAGE);
+      return true;
+    }
+    plugin.getServer().dispatchCommand(sender, "version Ultrabans");
+    return true;
+  }
+}
