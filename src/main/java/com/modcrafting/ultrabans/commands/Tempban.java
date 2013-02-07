@@ -147,7 +147,6 @@ public class Tempban implements CommandExecutor {
           if (plugin.getLog()) {
             plugin.getLogger().info(bcmsg);
           }
-          return;
         } else {
           victim = plugin.getServer().getOfflinePlayer(p).getPlayer();
           if (victim != null) {

@@ -26,6 +26,7 @@ public class CheckIP implements CommandExecutor {
     this.plugin = ultraBan;
   }
 
+    @Override
   public boolean onCommand(final CommandSender sender, Command command, String label, final String[] args) {
     if (!sender.hasPermission(command.getPermission())) {
       sender.sendMessage(Ultrabans.DEFAULT_DENY_MESSAGE);

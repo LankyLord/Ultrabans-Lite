@@ -111,7 +111,6 @@ public class Unban implements CommandExecutor {
           bcmsg = bcmsg.replaceAll(Ultrabans.ADMIN, admin);
           bcmsg = bcmsg.replaceAll(Ultrabans.VICTIM, p);
           plugin.getServer().broadcastMessage(Formatting.formatMessage(bcmsg));
-          return;
         } else {
           if (plugin.tempBans.containsKey(p.toLowerCase())) {
             plugin.tempBans.remove(p.toLowerCase());
@@ -156,7 +155,6 @@ public class Unban implements CommandExecutor {
             failed = Formatting.formatMessage(failed);
             sender.sendMessage(failed);
           }
-          return;
         }
       }
     });

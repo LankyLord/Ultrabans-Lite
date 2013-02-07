@@ -176,7 +176,6 @@ public class Tempipban implements CommandExecutor {
           if (plugin.getLog()) {
             plugin.getLogger().info(bcmsg);
           }
-          return;
         } else {
           victim = plugin.getServer().getOfflinePlayer(p).getPlayer();
           if (victim != null) {
@@ -227,7 +226,6 @@ public class Tempipban implements CommandExecutor {
           if (plugin.getLog()) {
             plugin.getLogger().info(bcmsg);
           }
-          return;
         }
       }
     });
