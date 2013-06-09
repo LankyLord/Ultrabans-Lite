@@ -14,19 +14,19 @@ import com.modcrafting.ultrabans.Ultrabans;
 
 public class Version implements CommandExecutor {
 
-  Ultrabans plugin;
+    Ultrabans plugin;
 
-  public Version(Ultrabans ultraBan) {
-    this.plugin = ultraBan;
-  }
-
-  @Override
-  public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-    if (!sender.hasPermission(command.getPermission())) {
-      sender.sendMessage(Ultrabans.DEFAULT_DENY_MESSAGE);
-      return true;
+    public Version(Ultrabans ultraBan) {
+        this.plugin = ultraBan;
     }
-    plugin.getServer().dispatchCommand(sender, "version Ultrabans");
-    return true;
-  }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission(command.getPermission())) {
+            sender.sendMessage(Ultrabans.DEFAULT_DENY_MESSAGE);
+            return true;
+        }
+        plugin.getServer().dispatchCommand(sender, "version Ultrabans");
+        return true;
+    }
 }

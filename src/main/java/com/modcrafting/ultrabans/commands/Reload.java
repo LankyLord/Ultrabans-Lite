@@ -14,24 +14,23 @@ import com.modcrafting.ultrabans.Ultrabans;
 
 public class Reload implements CommandExecutor {
 
-  Ultrabans plugin;
+    Ultrabans plugin;
 
-  public Reload(Ultrabans ultraBan) {
-    this.plugin = ultraBan;
-  }
+    public Reload(Ultrabans ultraBan) {
+        this.plugin = ultraBan;
+    }
 
-  @Override
-  public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-    if (!sender.hasPermission(command.getPermission())) {
-      sender.sendMessage(Ultrabans.DEFAULT_DENY_MESSAGE);
-      return true;
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission(command.getPermission())) {
+            sender.sendMessage(Ultrabans.DEFAULT_DENY_MESSAGE);
+            return true;
+        }
+        plugin.reloadConfig();
+        plugin.getServer().getPluginManager().disablePlugin(plugin);
+        plugin.getServer().getPluginManager().enablePlugin(plugin);
+        if (plugin.getLog())
+            plugin.getLogger().info("Reloaded.");
+        return true;
     }
-    plugin.reloadConfig();
-    plugin.getServer().getPluginManager().disablePlugin(plugin);
-    plugin.getServer().getPluginManager().enablePlugin(plugin);
-    if (plugin.getLog()) {
-      plugin.getLogger().info("Reloaded.");
-    }
-    return true;
-  }
 }
